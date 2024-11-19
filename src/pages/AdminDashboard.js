@@ -4,13 +4,68 @@ import { useSelector, useDispatch } from 'react-redux';
 import { addUser, removeUser, updateUser, toggleUserStatus } from '../slices/usersSlice';
 import { addServiceProvider, updateServiceProvider, removeServiceProvider } from '../slices/servicesSlice';
 import { addBooking, updateBookingStatus, cancelBooking } from '../slices/bookingsSlice';
-import { Container, Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material';
+import { Container, Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box } from '@mui/material';
+import { Bar, Pie, Line } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, LineElement, PointElement } from 'chart.js';
+
+// Register necessary components for Chart.js
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  LineElement,
+  PointElement
+);
 
 const AdminDashboard = () => {
   const dispatch = useDispatch();
   const users = useSelector(state => state.users.users);
   const services = useSelector(state => state.services.serviceProviders);
   const bookings = useSelector(state => state.bookings.bookings);
+
+  const serviceTrendData = {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    datasets: [
+      {
+        label: 'Plumbing',
+        data: [20, 40, 30, 50, 60, 70],
+        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+      },
+      {
+        label: 'Electrical',
+        data: [15, 25, 35, 45, 55, 65],
+        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+      },
+    ],
+  };
+
+  const userDistributionData = {
+    labels: ['Active Customers', 'Active Providers'],
+    datasets: [
+      {
+        data: [70, 30],
+        backgroundColor: ['rgba(255, 99, 132, 0.6)', 'rgba(54, 162, 235, 0.6)'],
+        hoverOffset: 4,
+      },
+    ],
+  };
+
+  const userGrowthData = {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+    datasets: [
+      {
+        label: 'New Signups',
+        data: [10, 20, 30, 40, 50, 60],
+        borderColor: 'rgba(75, 192, 192, 1)',
+        fill: false,
+        tension: 0.1,
+      },
+    ],
+  };
 
   // Sample actions for demonstration
   const handleBlockUser = (userId) => {
@@ -42,20 +97,51 @@ const AdminDashboard = () => {
     dispatch(updateUser(updatedUser));
   };
 
+  // Service management
+  const handleAddServiceProvider = () => {
+    const newServiceProvider = {
+      id: services.length + 1,
+      name: 'New Service Provider',
+      service: 'Plumbing',
+    };
+    dispatch(addServiceProvider(newServiceProvider));
+  };
+
+  const handleRemoveServiceProvider = (serviceId) => {
+    dispatch(removeServiceProvider(serviceId));
+  };
+
   // Booking management
   const handleUpdateBookingStatus = (bookingId, status) => {
     dispatch(updateBookingStatus({ id: bookingId, status }));
   };
 
   return (
-    <Container>
+    <Container style={{marginTop: "12px", marginBottom: "12px"}}>
       <Typography variant="h4" gutterBottom>
         Admin Dashboard
       </Typography>
 
+      <Box className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+        {/* Bar Chart for Service Trends */}
+        <Box className="w-full">
+          <Bar data={serviceTrendData} options={{ responsive: true, maintainAspectRatio: false }} />
+        </Box>
+
+        {/* Pie Chart for User Distribution */}
+        <Box className="w-full">
+          <Pie data={userDistributionData} options={{ responsive: true, maintainAspectRatio: false }} />
+        </Box>
+
+        {/* Line Chart for User Growth */}
+        <Box className="w-full">
+          <Line data={userGrowthData} options={{ responsive: true, maintainAspectRatio: false }} />
+        </Box>
+      </Box>
+
       {/* User Management Section */}
       <Typography variant="h6">User Management</Typography>
-      <Button style={{marginBottom: "8px"}} variant="contained" color="primary" onClick={handleAddUser}>
+      <Button style={{ marginBottom: '8px' }} variant="contained" color="primary" onClick={handleAddUser}>
         Add User
       </Button>
       <TableContainer component={Paper}>
@@ -99,6 +185,9 @@ const AdminDashboard = () => {
       <Typography variant="h6" style={{ marginTop: '2rem' }}>
         Service Management
       </Typography>
+      <Button variant="contained" color="primary" onClick={handleAddServiceProvider}>
+        Add Service Provider
+      </Button>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -106,6 +195,7 @@ const AdminDashboard = () => {
               <TableCell>ID</TableCell>
               <TableCell>Provider Name</TableCell>
               <TableCell>Service</TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -114,6 +204,11 @@ const AdminDashboard = () => {
                 <TableCell>{service.id}</TableCell>
                 <TableCell>{service.name}</TableCell>
                 <TableCell>{service.service}</TableCell>
+                <TableCell>
+                  <Button color="secondary" onClick={() => handleRemoveServiceProvider(service.id)}>
+                    Remove
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -150,7 +245,7 @@ const AdminDashboard = () => {
                   <Button onClick={() => handleUpdateBookingStatus(booking.id, 'Completed')}>
                     Mark Completed
                   </Button>
-                  <Button color="secondary" onClick={() => dispatch(cancelBooking({ id: booking.id }))}>
+                  <Button color="secondary" onClick={() => handleUpdateBookingStatus(booking.id, 'Cancelled')}>
                     Cancel
                   </Button>
                 </TableCell>
@@ -158,9 +253,8 @@ const AdminDashboard = () => {
             ))}
           </TableBody>
         </Table>
-      </TableContainer>
 
-      {/* Analytics Section */}
+      </TableContainer>
       <Typography variant="h6" style={{ marginTop: '2rem' }}>
         Analytics Dashboard
       </Typography>
